@@ -7,23 +7,75 @@
     <link rel="stylesheet" href="{{ asset('vendor/core/plugins/ecommerce/css/invoice.css') }}?v=1.1.1">
 </head>
 <body @if (BaseHelper::siteLanguageDirection() == 'rtl') dir="rtl" @endif>
-
-<span class="stamp @if ($order->payment->status == \Botble\Payment\Enums\PaymentStatusEnum::COMPLETED) is-completed @else is-failed @endif">{{ $order->payment->status->label() }}</span>
+<style>
+    .line-items-container tr th{
+        padding: 10px;
+        border: solid 1px #555;
+        text-align: right;
+        color: black;
+        font-weight: bold;
+        font-size: 14px
+    }
+    .border  td,.border_td{
+        padding: 10px !important;
+        border: solid 0.5px #555;
+        text-align: right
+    }
+    .container{
+     height: 100px;
+     margin-bottom: 10px;
+     }
+    .container >div{
+       
+        float: right;;
+    }
+    .right-container{
+        width: 30%;
+    line-height: 33px
+    }
+    .center-container{
+        width: 33%;
+        display: flex;
+        justify-content: center
+    }
+    .left-container{
+        width: 33%;
+       
+        line-height: 30px
+    }
+</style>
 
 @php
     $logo = theme_option('logo_in_invoices') ?: theme_option('logo');
 @endphp
+<div class="container">
 
-<div class="logo-container">
-    @if ($logo)
-        <img src="{{ RvMedia::getImageUrl($logo) }}"
-             style="width:100%; max-width:150px;" alt="{{ theme_option('site_title') }}">
-    @endif
+    <div class="left-container">
+      <strong>{{ get_ecommerce_setting('store_name') }}</strong>  
+        <br>
+        {{ get_ecommerce_setting('store_address') }}
+        <br>
+        {{ get_ecommerce_setting('store_phone') }}
+    </div>
+    <div class="center-container">
+        @if ($logo)
+            <img src="{{ RvMedia::getImageUrl($logo) }}"
+                 style="width:100%; max-width:100px;" alt="{{ theme_option('site_title') }}">
+        @endif
+    </div>
+    <div class="right-container">
+       {{ trans('plugins/ecommerce::order.invoice') }}: <strong>{{ get_order_code($order->id) }}</strong>
+<br>
+      {{ trans('plugins/ecommerce::order.created') }}: <strong>{{ now()->format('Y-m-d') }}</strong>
+    </div>
 </div>
+<hr>
+<br>
+<br>
+<table class="invoice-info-container border">
 
-<table class="invoice-info-container">
     <tr>
-        <td rowspan="2">
+        <td  class="">
             {{ trans('plugins/ecommerce::order.customer_label') }}
         </td>
         <td>
@@ -31,27 +83,32 @@
         </td>
     </tr>
     <tr>
+        
+        <td rowspan="">
+            {{ trans('plugins/ecommerce::order.address') }}
+         </td>
         <td>
             {{ $order->full_address }}
         </td>
     </tr>
+    @if ($order->address->phone!='')
     <tr>
-        <td>
-            {{ trans('plugins/ecommerce::order.created') }}: <strong>{{ now()->format('F d, Y') }}</strong>
-        </td>
-        <td>
-
-            {{ $order->address->email }}
-        </td>
-    </tr>
-    <tr>
-        <td>
-            {{ trans('plugins/ecommerce::order.invoice') }}: <strong>{{ get_order_code($order->id) }}</strong>
-        </td>
+        <td> {{ trans('plugins/ecommerce::order.phone') }}</td>
         <td>
             {{ $order->address->phone ?? 'N/A' }}
         </td>
+    </tr> 
+    @endif
+  
+    @if (isset($order->address->email)&& $order->address->email!='')
+    
+    <tr>
+        <td> {{ trans('plugins/ecommerce::order.email') }}</td>
+        <td>
+            {{ $order->address->email ?? 'N/A' }}
+        </td>
     </tr>
+    @endif
 </table>
 
 
@@ -68,6 +125,7 @@
     <tbody>
 
         @foreach ($order->products as $orderProduct)
+        
             @php
                 $product = get_products([
                     'condition' => [
@@ -89,7 +147,8 @@
                 ]);
             @endphp
             @if (!empty($product))
-                <tr>
+            
+                <tr class="border">
                     <td>
                         {{ $product->name }}
                     </td>
@@ -110,17 +169,19 @@
                     <td>
                         {{ $orderProduct->qty }}
                     </td>
-                    <td class="right">
-                        @if ($product->front_sale_price != $product->price)
-                            {!! htmlentities(format_price($product->front_sale_price)) !!}
+                    <td class="right border_td">
+                       
+                        @if ($product->sale_price != $product->price &&$product->sale_price!='')
+        
+                            {!! htmlentities(format_price($product->sale_price)) !!}
                             <del>{!! htmlentities(format_price($product->price)) !!}</del>
                         @else
                             {!! htmlentities(format_price($product->price)) !!}
                         @endif
                     </td>
-                    <td class="bold">
-                        @if ($product->front_sale_price != $product->price)
-                            {!! htmlentities(format_price($product->front_sale_price * $orderProduct->qty)) !!}
+                    <td class="bold border_td">
+                        @if ($product->sale_price != $product->price &&$product->sale_price!='')
+                            {!! htmlentities(format_price($product->sale_price * $orderProduct->qty)) !!}
                         @else
                             {!! htmlentities(format_price($product->price * $orderProduct->qty)) !!}
                         @endif
@@ -130,42 +191,50 @@
         @endforeach
 
         <tr>
-            <td colspan="4" class="right">
+            <td colspan="2"></td>
+            <td colspan="2" class="right border_td">
                 {{ trans('plugins/ecommerce::products.form.sub_total') }}
             </td>
-            <td class="bold">
+            <td class="bold border_td">
                 {!! htmlentities(format_price($order->sub_total)) !!}
             </td>
         </tr>
-        @if (EcommerceHelper::isTaxEnabled())
+        @if (EcommerceHelper::isTaxEnabled()&&$order->tax_amount!=0)
             <tr>
-                <td colspan="4" class="right">
+                <td colspan="2"></td>
+                <td colspan="2" class="right border_td">
                     {{ trans('plugins/ecommerce::products.form.tax') }}
                 </td>
-                <td class="bold">
+                <td class="bold border_td">
                     {!! htmlentities(format_price($order->tax_amount)) !!}
                 </td>
             </tr>
         @endif
         <tr>
-            <td colspan="4" class="right">
+            <td colspan="2"></td>
+            <td class="border_td" colspan="2" class="right">
                 {{ trans('plugins/ecommerce::products.form.shipping_fee') }}
             </td>
-            <td class="bold">
+            <td class="border_td" class="bold">
                 {!! htmlentities(format_price($order->shipping_amount)) !!}
             </td>
         </tr>
+        @if ($order->discount_amount!=0)
         <tr>
-            <td colspan="4" class="right">
+            <td colspan="2">
+            </td>
+            <td colspan="2" class="right border_td">
                 {{ trans('plugins/ecommerce::products.form.discount') }}
             </td>
-            <td class="bold">
+            <td class="bold border_td">
                 {!! htmlentities(format_price($order->discount_amount)) !!}
             </td>
         </tr>
+        @endif
+     
     </tbody>
 </table>
-
+<span class="stamp @if ($order->payment->status == \Botble\Payment\Enums\PaymentStatusEnum::COMPLETED) is-completed @else is-failed @endif">{{ $order->payment->status->label() }}</span>
 
 <table class="line-items-container">
     <thead>
@@ -176,7 +245,7 @@
     </thead>
     <tbody>
     <tr>
-        <td class="payment-info">
+        <td class="payment-info border_td">
             <div>
                 {{ trans('plugins/ecommerce::order.payment_method') }}: <strong>{{ $order->payment->payment_channel->label() }}</strong>
             </div>
@@ -184,9 +253,12 @@
                 {{ trans('plugins/ecommerce::order.payment_status_label') }}: <strong>{{ $order->payment->status->label() }}</strong>
             </div>
         </td>
-        <td class="large total">{!! htmlentities(format_price($order->amount)) !!}</td>
+        <td class="large total border_td">{!! htmlentities(format_price($order->amount)) !!}</td>
     </tr>
     </tbody>
 </table>
 </body>
 </html>
+<script>
+    window.print();
+    </script>
