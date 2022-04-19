@@ -44,7 +44,11 @@ class PaymentController extends Controller
      {
        
             $description=Fun::fetch_details(['key' => 'payment_bank_transfer_description'], 'settings', 'value');
-    
+            if(empty($description)){
+             
+                $description['value']="لاتوجد حسابات بنكية";
+                $description=array($description);
+            }
              $this->response['error'] = false;
              $this->response['message'] = 'Payment bank transfer description Retrieved Successfully';
              $this->response['data'] =$description;
