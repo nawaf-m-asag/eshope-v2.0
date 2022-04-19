@@ -1,14 +1,14 @@
 <?php
 
 return [
-    'name'   => 'Notifications',
-    'create' => 'New notification',
-    'edit'   => 'Edit notification',
-    'date_sent'=>'Date Sent',
-    'message'=>'Message',
-    'type'=>'Type',
-    'category'=>'Category',
-    'product'=>'Product',
+    'name'   => 'الاشعارات',
+    'create' => 'اشعار جديد',
+    'edit'   => 'تعديل اشعار',
+    'date_sent'=>'تاريخ الارسال',
+    'message'=>'الرسالة',
+    'type'=>'النوع',
+    'category'=>'التصنيف',
+    'product'=>'المنتجات',
     'all-user'=>'اشعار جماعي',
     'one-user'=>'اشعار مخصص',
     'customers'=>'العميل'
